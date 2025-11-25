@@ -1,0 +1,207 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Statistiques - iTarot{% endblock %}
+
+{% block body %}
+<h1 class="mb-4"><i class="bi bi-graph-up"></i> Statistiques</h1>
+
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h6 class="card-title">Total de parties</h6>
+                <div class="display-6">{{ stats.totalGames }}</div>
+            </div>
+        </div>
+    </div>
+    {% if stats.topScorer %}
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h6 class="card-title">Meilleur score total</h6>
+                <div class="h5">{{ stats.topScorer.name }}</div>
+                <div class="display-6">{{ stats.topScorer.totalScore }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if stats.mostTaker %}
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h6 class="card-title">Prend le plus souvent</h6>
+                <div class="h5">{{ stats.mostTaker.name }}</div>
+                <div class="display-6">{{ stats.mostTaker.timesTaker }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if stats.bestWinRate %}
+    <div class="col-md-3 mb-3">
+        <div class="card stats-card">
+            <div class="card-body text-center">
+                <h6 class="card-title">Meilleur taux de victoire</h6>
+                <div class="h5">{{ stats.bestWinRate.name }}</div>
+                <div class="display-6">{{ stats.bestWinRate.winRate|number_format(0) }}%</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+{% if stats.playersStats|length > 0 %}
+<div class="row mb-4">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-bar-chart-fill"></i> Scores totaux par joueur</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="scoresChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-pie-chart-fill"></i> Nombre de parties par joueur</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="gamesChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0"><i class="bi bi-table"></i> Détails par joueur</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Joueur</th>
+                        <th class="text-end">Parties jouées</th>
+                        <th class="text-end">Fois preneur</th>
+                        <th class="text-end">Victoires</th>
+                        <th class="text-end">Taux de victoire</th>
+                        <th class="text-end">Score total</th>
+                        <th class="text-end">Score moyen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for playerStat in stats.playersStats %}
+                    <tr>
+                        <td><strong>{{ playerStat.name }}</strong></td>
+                        <td class="text-end">{{ playerStat.totalGames }}</td>
+                        <td class="text-end">{{ playerStat.timesTaker }}</td>
+                        <td class="text-end">{{ playerStat.wins }}</td>
+                        <td class="text-end">
+                            {% set winRate = playerStat.totalGames > 0 ? (playerStat.wins / playerStat.totalGames * 100) : 0 %}
+                            <span class="badge bg-info">{{ winRate|number_format(1) }}%</span>
+                        </td>
+                        <td class="text-end">
+                            {% if playerStat.totalScore > 0 %}
+                                <span class="text-success fw-bold">+{{ playerStat.totalScore }}</span>
+                            {% elseif playerStat.totalScore < 0 %}
+                                <span class="text-danger fw-bold">{{ playerStat.totalScore }}</span>
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% set avgScore = playerStat.averageScore|round %}
+                            {% if avgScore > 0 %}
+                                <span class="text-success">+{{ avgScore }}</span>
+                            {% elseif avgScore < 0 %}
+                                <span class="text-danger">{{ avgScore }}</span>
+                            {% else %}
+                                0
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Pas encore de statistiques disponibles. 
+    <a href="{{ path('app_list_new') }}" class="alert-link">Créez votre première liste !</a> Puis ajoutez des parties depuis la page de cette liste.
+</div>
+{% endif %}
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const chartData = {{ chartData|json_encode|raw }};
+    
+    // Graphique des scores
+    const scoresCtx = document.getElementById('scoresChart');
+    if (scoresCtx) {
+        new Chart(scoresCtx, {
+            type: 'bar',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Score total',
+                    data: chartData.totalScores,
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+    
+    // Graphique des parties
+    const gamesCtx = document.getElementById('gamesChart');
+    if (gamesCtx) {
+        new Chart(gamesCtx, {
+            type: 'pie',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    label: 'Nombre de parties',
+                    data: chartData.totalGames,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.5)',
+                        'rgba(54, 162, 235, 0.5)',
+                        'rgba(255, 206, 86, 0.5)',
+                        'rgba(75, 192, 192, 0.5)',
+                        'rgba(153, 102, 255, 0.5)',
+                        'rgba(255, 159, 64, 0.5)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)',
+                        'rgba(255, 159, 64, 1)'
+                    ],
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true
+            }
+        });
+    }
+</script>
+{% endblock %}

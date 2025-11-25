@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes joueurs - iTarot{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-people"></i> Mes joueurs</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{{ path('app_player_new') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> Ajouter un joueur
+        </a>
+    </div>
+</div>
+
+{% if players|length > 0 %}
+<div class="row">
+    {% for player in players %}
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-person-circle"></i> {{ player.name }}
+                </h5>
+                <div class="mt-3">
+                    <a href="{{ path('app_player_edit', {id: player.id}) }}" class="btn btn-sm btn-primary">
+                        <i class="bi bi-pencil"></i> Modifier
+                    </a>
+                    <form method="post" action="{{ path('app_player_delete', {id: player.id}) }}" style="display: inline-block;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce joueur ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ player.id) }}">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i> Supprimer
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Vous n'avez pas encore de joueurs. 
+    <a href="{{ path('app_player_new') }}" class="alert-link">Ajoutez votre premier joueur !</a>
+</div>
+{% endif %}
+{% endblock %}

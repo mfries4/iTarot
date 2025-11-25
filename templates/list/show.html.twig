@@ -1,0 +1,151 @@
+{% extends 'base.html.twig' %}
+{% block title %}Liste {{ list.name }} - iTarot{% endblock %}
+{% block body %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3"><i class="bi bi-folder"></i> {{ list.name }}</h1>
+  <div>
+    <a href="{{ path('app_game_new', {listId: list.id}) }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Nouvelle partie</a>
+    <form method="post" action="{{ path('app_list_delete', {id: list.id}) }}" style="display: inline-block;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette liste et toutes ses parties ?');">
+      <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ list.id) }}">
+      <button type="submit" class="btn btn-danger"><i class="bi bi-trash"></i> Supprimer la liste</button>
+    </form>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-dark text-white">Joueurs</div>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+          {% for item in cumulative %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              {{ item.player.name }}
+              <span class="badge bg-primary">{{ item.score >= 0 ? '+' ~ item.score : item.score }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card">
+      <div class="card-header bg-secondary text-white">Cumul des scores</div>
+      <div class="card-body">
+        <table class="table table-sm">
+          <thead><tr><th>Joueur</th><th class="text-end">Score cumulé</th><th class="text-end">Prises</th></tr></thead>
+          <tbody>
+          {% for item in cumulative %}
+            <tr>
+              <td>{{ item.player.name }}</td>
+              <td class="text-end">
+                {% if item.score > 0 %}<span class="text-success">+{{ item.score }}</span>{% elseif item.score < 0 %}<span class="text-danger">{{ item.score }}</span>{% else %}0{% endif %}
+              </td>
+              <td class="text-end">{{ item.takerCount }}</td>
+              <td class="text-end">{{ item.allyCount }}</td>
+              <td class="text-end">{{ item.games }}</td>
+            </tr>
+          {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row mb-4">
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-header bg-primary text-white">Scores cumulés</div>
+      <div class="card-body"><canvas id="listScoresChart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6 mb-3">
+    <div class="card h-100">
+      <div class="card-header bg-info text-white">Prises vs Alliés</div>
+      <div class="card-body"><canvas id="listRolesChart"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<h2 class="h4 mb-3">Historique des parties</h2>
+{% if list.games|length > 0 %}
+<div class="table-responsive">
+  <table class="table table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>Date</th><th>Contrat</th><th>Bouts</th><th>Preneur</th><th>Score preneur</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for game in list.games %}
+      <tr>
+        <td>{{ game.playedAt|date('d/m/Y H:i') }}</td>
+        <td>{{ game.contractType|upper }}</td>
+        <td>{{ game.oudlers }}</td>
+        <td>{% if game.taker %}{{ game.taker.player.name }}{% endif %}</td>
+        <td>{% if game.taker %}{% if game.taker.score > 0 %}<span class="text-success">+{{ game.taker.score }}{% else %}<span class="text-danger">{{ game.taker.score }}{% endif %}</span>{% endif %}</td>
+        <td>
+          <a href="{{ path('app_game_show', {listId: list.id, gameId: game.id}) }}" class="btn btn-sm btn-outline-info"><i class="bi bi-eye"></i></a>
+          <form method="post" action="{{ path('app_game_delete', {listId: list.id, gameId: game.id}) }}" style="display: inline-block;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette partie ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ game.id) }}">
+            <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">Aucune partie encore dans cette liste.</div>
+{% endif %}
+{% endblock %}
+
+{% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+  const listChartData = {{ chartData|json_encode|raw }};
+  const scoresCtx = document.getElementById('listScoresChart');
+  if (scoresCtx) {
+    new Chart(scoresCtx, {
+      type: 'bar',
+      data: {
+        labels: listChartData.labels,
+        datasets: [{
+          label: 'Score cumulé',
+            data: listChartData.scores,
+            backgroundColor: 'rgba(54,162,235,0.5)',
+            borderColor: 'rgba(54,162,235,1)',
+            borderWidth: 1
+        }]
+      },
+      options: {responsive:true,scales:{y:{beginAtZero:true}}}
+    });
+  }
+  const rolesCtx = document.getElementById('listRolesChart');
+  if (rolesCtx) {
+    new Chart(rolesCtx, {
+      type: 'radar',
+      data: {
+        labels: listChartData.labels,
+        datasets: [
+          {
+            label: 'Prises',
+            data: listChartData.takers,
+            backgroundColor: 'rgba(255,99,132,0.3)',
+            borderColor: 'rgba(255,99,132,1)'
+          },
+          {
+            label: 'Alliés',
+            data: listChartData.allies,
+            backgroundColor: 'rgba(75,192,192,0.3)',
+            borderColor: 'rgba(75,192,192,1)'
+          }
+        ]
+      },
+      options: {responsive:true, elements:{line:{borderWidth:2}}}
+    });
+  }
+</script>
+{% endblock %}

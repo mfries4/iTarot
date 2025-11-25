@@ -1,0 +1,145 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Partie du {{ game.playedAt|date('d/m/Y') }} - iTarot{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-card-list"></i> Partie du {{ game.playedAt|date('d/m/Y à H:i') }} (Liste {{ game.gameList.name }})</h1>
+    </div>
+    <div class="col-auto">
+        <a href="{{ path('app_game_index', {listId: game.gameList.id}) }}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour
+        </a>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Résumé</h5>
+                <p class="card-text">
+                    {% if game.taker %}
+                        {% if game.taker.score > 0 %}
+                            <i class="bi bi-trophy-fill text-warning"></i> 
+                            <strong>{{ game.taker.player.name }}</strong> a remporté cette partie avec un contrat de 
+                            <strong>{{ scoreCalculator.getContractDisplayName(game.contractType) }}</strong> 
+                            en faisant <strong>{{ game.points }} points</strong> avec <strong>{{ game.oudlers }} bout(s)</strong>.
+                            Le preneur gagne <strong class="text-success">{{ game.taker.score }} points</strong>.
+                        {% else %}
+                            <i class="bi bi-x-circle-fill text-danger"></i> 
+                            <strong>{{ game.taker.player.name }}</strong> a perdu cette partie avec un contrat de 
+                            <strong>{{ scoreCalculator.getContractDisplayName(game.contractType) }}</strong> 
+                            en faisant seulement <strong>{{ game.points }} points</strong> avec <strong>{{ game.oudlers }} bout(s)</strong>.
+                            Le preneur perd <strong class="text-danger">{{ game.taker.score }} points</strong>.
+                        {% endif %}
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+<br>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Informations de la partie</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th>Nombre de joueurs :</th>
+                        <td>{{ game.gameList.players|length }}</td>
+                    </tr>
+                    <tr>
+                        <th>Contrat :</th>
+                        <td>
+                            <span class="badge bg-primary">
+                                {{ scoreCalculator.getContractDisplayName(game.contractType) }}
+                            </span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Nombre de bouts :</th>
+                        <td>{{ game.oudlers }}</td>
+                    </tr>
+                    <tr>
+                        <th>Points marqués :</th>
+                        <td><strong>{{ game.points }}</strong> / 91</td>
+                    </tr>
+                    <tr>
+                        <th>Petit au bout :</th>
+                        <td>
+                            {% if game.petitAuBout %}
+                                <span class="badge bg-success">Oui</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Non</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>Poignée :</th>
+                        <td>
+                            {% if game.poigneeType %}
+                                <span class="badge bg-info">{{ scoreCalculator.getPoigneeDisplayName(game.poigneeType) }}</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Aucune</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="bi bi-trophy"></i> Scores des joueurs</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Joueur</th>
+                            <th>Rôle</th>
+                            <th class="text-end">Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gamePlayer in game.gamePlayers %}
+                        <tr>
+                            <td>
+                                <strong>{{ gamePlayer.player.name }}</strong>
+                            </td>
+                            <td>
+                                {% if gamePlayer.isTaker %}
+                                    <span class="badge bg-danger">Preneur</span>
+                                {% elseif gamePlayer.isAlly %}
+                                    <span class="badge bg-warning text-dark">Allié</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Défenseur</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                {% if gamePlayer.score > 0 %}
+                                    <span class="text-success fw-bold fs-5">+{{ gamePlayer.score }}</span>
+                                {% elseif gamePlayer.score < 0 %}
+                                    <span class="text-danger fw-bold fs-5">{{ gamePlayer.score }}</span>
+                                {% else %}
+                                    <span class="fw-bold fs-5">0</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+{% endblock %}

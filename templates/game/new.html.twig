@@ -1,0 +1,119 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Nouvelle partie - iTarot{% endblock %}
+
+{% block body %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h1 class="mb-4"><i class="bi bi-plus-circle"></i> Nouvelle partie dans la liste {{ list.name }}</h1>
+
+        <div class="card">
+            <div class="card-body">
+                {{ form_start(form) }}
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form_row(form.playedAt) }}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Joueurs de la liste</h5>
+                    <ul class="list-group mb-3">
+                        {% for p in list.players %}
+                            <li class="list-group-item">{{ p.name }}</li>
+                        {% endfor %}
+                    </ul>
+
+                    <hr>
+
+                    <h5 class="mb-3">Détails de la partie</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form_row(form.taker) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form_row(form.ally) }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form_row(form.contractType) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form_row(form.oudlers) }}
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            {{ form_row(form.points) }}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <h5 class="mb-3">Bonus</h5>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-check mb-3">
+                                {{ form_widget(form.petitAuBout) }}
+                                {{ form_label(form.petitAuBout) }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            {{ form_row(form.poigneeType) }}
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle"></i> Enregistrer la partie
+                        </button>
+                        <a href="{{ path('app_game_index', {listId: list.id}) }}" class="btn btn-secondary btn-lg">
+                            <i class="bi bi-x-circle"></i> Annuler
+                        </a>
+                    </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+<script>
+    // Aide pour la sélection des joueurs
+    document.addEventListener('DOMContentLoaded', function() {
+        const playerCheckboxes = document.querySelectorAll('input[name="game[players][]"]');
+        const numberOfPlayersInfo = document.createElement('div');
+        numberOfPlayersInfo.className = 'alert alert-info mt-2';
+        
+        if (playerCheckboxes.length > 0) {
+            playerCheckboxes[0].closest('.form-group')?.appendChild(numberOfPlayersInfo);
+        }
+        
+        function updatePlayerCount() {
+            const count = Array.from(playerCheckboxes).filter(cb => cb.checked).length;
+            numberOfPlayersInfo.textContent = `${count} joueur(s) sélectionné(s) - Une partie nécessite 3, 4 ou 5 joueurs`;
+            
+            if (count < 3 || count > 5) {
+                numberOfPlayersInfo.className = 'alert alert-warning mt-2';
+            } else {
+                numberOfPlayersInfo.className = 'alert alert-success mt-2';
+            }
+        }
+        
+        playerCheckboxes.forEach(cb => {
+            cb.addEventListener('change', updatePlayerCount);
+        });
+        
+        updatePlayerCount();
+    });
+</script>
+{% endblock %}

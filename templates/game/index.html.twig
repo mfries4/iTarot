@@ -1,0 +1,77 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mes parties - iTarot{% endblock %}
+
+{% block body %}
+<div class="row mb-4">
+    <div class="col">
+        <h1><i class="bi bi-list-ul"></i> Historique des parties</h1>
+    </div>
+</div>
+
+<h1 class="h4 mb-3"><i class="bi bi-list-ul"></i> Parties de la liste {{ list.name }}</h1>
+<a href="{{ path('app_game_new', {listId: list.id}) }}" class="btn btn-success mb-3"><i class="bi bi-plus-circle"></i> Nouvelle partie</a>
+{% if games|length > 0 %}
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th>Date</th>
+                <th>Preneur</th>
+                <th>Contrat</th>
+                <th>Bouts</th>
+                <th>Points</th>
+                <th>Résultat</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for game in games %}
+            <tr>
+                <td>{{ game.playedAt|date('d/m/Y H:i') }}</td>
+                <td>
+                    {% if game.taker %}
+                        <strong>{{ game.taker.player.name }}</strong>
+                        {% if game.taker.score > 0 %}
+                            <span class="badge bg-success">Gagné</span>
+                        {% else %}
+                            <span class="badge bg-danger">Perdu</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge bg-primary">{{ game.contractType|upper }}</span>
+                </td>
+                <td>{{ game.oudlers }} bout(s)</td>
+                <td>{{ game.points }} pts</td>
+                <td>
+                    {% if game.taker %}
+                        {% if game.taker.score > 0 %}
+                            <span class="text-success fw-bold">+{{ game.taker.score }}</span>
+                        {% else %}
+                            <span class="text-danger fw-bold">{{ game.taker.score }}</span>
+                        {% endif %}
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ path('app_game_show', {listId: list.id, gameId: game.id}) }}" class="btn btn-sm btn-info">
+                        <i class="bi bi-eye"></i> Voir
+                    </a>
+                    <form method="post" action="{{ path('app_game_delete', {listId: list.id, gameId: game.id}) }}" style="display: inline-block;" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette partie ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ game.id) }}">
+                        <button type="submit" class="btn btn-sm btn-danger">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i> Aucune partie dans cette liste pour l'instant.
+</div>
+{% endif %}
+{% endblock %}

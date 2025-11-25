@@ -1,0 +1,111 @@
+{% extends 'base.html.twig' %}
+{% block title %}Nouvelle liste - iTarot{% endblock %}
+
+{% block stylesheets %}
+{{ parent() }}
+<style>
+  .player-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
+    margin-bottom: 1rem;
+  }
+  .player-option {
+    position: relative;
+  }
+  .player-option input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .player-label {
+    display: block;
+    padding: 12px 16px;
+    background: white;
+    border: 2px solid #dee2e6;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-align: center;
+    font-weight: 500;
+    font-size: 1.05rem;
+  }
+  .player-label:hover {
+    border-color: #f77f00;
+    background-color: #fff5ed;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(247, 127, 0, 0.2);
+  }
+  .player-option input[type="checkbox"]:checked + .player-label {
+    background: linear-gradient(135deg, #e63946, #f77f00);
+    color: white;
+    border-color: #e63946;
+    box-shadow: 0 4px 12px rgba(230, 57, 70, 0.3);
+  }
+  .player-option input[type="checkbox"]:checked + .player-label::before {
+    content: "✓ ";
+    font-weight: bold;
+  }
+  .selection-info {
+    background: #e7f3ff;
+    border-left: 4px solid #4ea8de;
+    padding: 12px 16px;
+    border-radius: 6px;
+    margin-bottom: 1rem;
+    font-size: 1.05rem;
+  }
+</style>
+{% endblock %}
+
+{% block body %}
+<h1 class="h3 mb-4"><i class="bi bi-folder-plus"></i> Créer une liste de parties</h1>
+<div class="card">
+  <div class="card-body">
+    {{ form_start(form) }}
+      {{ form_row(form.name) }}
+      <hr>
+      <h5 class="mb-3">Sélectionnez les joueurs <small class="text-muted">(minimum 3)</small></h5>
+      <div class="selection-info">
+        <i class="bi bi-info-circle"></i> <span id="selection-count">0 joueur(s) sélectionné(s)</span>
+      </div>
+      <div class="player-selector">
+        {% for child in form.players %}
+          <div class="player-option">
+            {{ form_widget(child) }}
+            {{ form_label(child, null, {'label_attr': {'class': 'player-label'}}) }}
+          </div>
+        {% endfor %}
+      </div>
+      {{ form_errors(form.players) }}
+      <hr>
+      <button class="btn btn-success"><i class="bi bi-check-circle"></i> Créer</button>
+      <a href="{{ path('app_list_index') }}" class="btn btn-secondary">Annuler</a>
+    {{ form_end(form) }}
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.player-option input[type="checkbox"]');
+    const countDisplay = document.getElementById('selection-count');
+    
+    function updateCount() {
+      const count = Array.from(checkboxes).filter(cb => cb.checked).length;
+      countDisplay.textContent = count + ' joueur(s) sélectionné(s)';
+      if (count >= 3) {
+        countDisplay.parentElement.style.background = '#d4edda';
+        countDisplay.parentElement.style.borderColor = '#06a77d';
+      } else {
+        countDisplay.parentElement.style.background = '#fff3cd';
+        countDisplay.parentElement.style.borderColor = '#f77f00';
+      }
+    }
+    
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', updateCount);
+    });
+    
+    updateCount();
+  });
+</script>
+{% endblock %}
