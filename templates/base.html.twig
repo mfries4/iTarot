@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,14 +9,37 @@
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
         {% block stylesheets %}
         <style>
-            :root {
+            :root[data-theme="light"] {
                 --primary-warm: #e63946;
                 --secondary-warm: #f77f00;
                 --accent-warm: #fcbf49;
                 --success-warm: #06a77d;
                 --info-warm: #4ea8de;
                 --bg-light: #fef9f3;
+                --bg-card: #ffffff;
                 --text-dark: #2b2d42;
+                --text-muted: #6c757d;
+                --border-color: #dee2e6;
+                --navbar-bg: linear-gradient(135deg, #e63946 0%, #f77f00 100%);
+                --footer-bg: linear-gradient(135deg, #2b2d42 0%, #4a4e69 100%);
+                --shadow: rgba(0,0,0,0.1);
+                --shadow-hover: rgba(0,0,0,0.15);
+            }
+            :root[data-theme="dark"] {
+                --primary-warm: #ff6b7a;
+                --secondary-warm: #ffa94d;
+                --accent-warm: #ffd60a;
+                --success-warm: #20c997;
+                --info-warm: #66d9ef;
+                --bg-light: #1a1a2e;
+                --bg-card: #16213e;
+                --text-dark: #eaeaea;
+                --text-muted: #adb5bd;
+                --border-color: #495057;
+                --navbar-bg: linear-gradient(135deg, #c1121f 0%, #d65108 100%);
+                --footer-bg: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+                --shadow: rgba(0,0,0,0.3);
+                --shadow-hover: rgba(0,0,0,0.5);
             }
             body {
                 min-height: 100vh;
@@ -25,6 +48,7 @@
                 background-color: var(--bg-light);
                 color: var(--text-dark);
                 font-size: 1.05rem;
+                transition: background-color 0.3s ease, color 0.3s ease;
             }
             .navbar-brand {
                 font-weight: bold;
@@ -43,19 +67,21 @@
             h3 { font-size: 1.75rem; }
             h4 { font-size: 1.5rem; }
             .card {
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                background-color: var(--bg-card);
+                box-shadow: 0 4px 12px var(--shadow);
                 transition: all 0.3s ease;
-                border: none;
+                border: 1px solid var(--border-color);
                 border-radius: 12px;
             }
             .card:hover {
                 transform: translateY(-5px);
-                box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+                box-shadow: 0 8px 20px var(--shadow-hover);
             }
             .card-header {
                 border-radius: 12px 12px 0 0 !important;
                 font-weight: 600;
                 font-size: 1.2rem;
+                border-bottom: 1px solid var(--border-color);
             }
             .stats-card {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -105,18 +131,50 @@
             }
             .table {
                 font-size: 1.05rem;
+                color: var(--text-dark);
+            }
+            [data-theme="dark"] .table {
+                --bs-table-bg: var(--bg-card);
+                --bs-table-striped-bg: rgba(255,255,255,0.05);
             }
             .badge {
                 font-size: 0.95rem;
                 padding: 0.4rem 0.7rem;
                 border-radius: 6px;
             }
+            .text-muted {
+                color: var(--text-muted) !important;
+            }
+            .form-control, .form-select {
+                background-color: var(--bg-card);
+                color: var(--text-dark);
+                border-color: var(--border-color);
+            }
+            .form-control:focus, .form-select:focus {
+                background-color: var(--bg-card);
+                color: var(--text-dark);
+                border-color: var(--primary-warm);
+            }
+            #theme-toggle {
+                cursor: pointer;
+                font-size: 1.3rem;
+                padding: 0.4rem 0.8rem;
+                background: rgba(255,255,255,0.2);
+                border: none;
+                border-radius: 8px;
+                color: white;
+                transition: all 0.3s ease;
+            }
+            #theme-toggle:hover {
+                background: rgba(255,255,255,0.3);
+                transform: scale(1.1);
+            }
         </style>
         {% endblock %}
     </head>
     <body>
         {% if app.user %}
-        <nav class="navbar navbar-expand-lg navbar-dark" style="background: linear-gradient(135deg, #e63946 0%, #f77f00 100%); box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        <nav class="navbar navbar-expand-lg navbar-dark" style="background: var(--navbar-bg); box-shadow: 0 4px 12px var(--shadow);">
             <div class="container-fluid">
                 <a class="navbar-brand" href="{{ path('app_home') }}" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.2);">🃏 iTarot</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -141,6 +199,11 @@
                         </li>
                     </ul>
                     <ul class="navbar-nav">
+                        <li class="nav-item me-2">
+                            <button id="theme-toggle" title="Changer de thème">
+                                <i class="bi bi-moon-stars-fill" id="theme-icon"></i>
+                            </button>
+                        </li>
                         <li class="nav-item dropdown">
                             <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" style="font-size: 1.1rem; font-weight: 500;">
                                 <i class="bi bi-person-circle"></i> {{ app.user.userIdentifier }}
@@ -172,13 +235,40 @@
             </div>
         </main>
 
-        <footer class="text-white text-center py-4 mt-5" style="background: linear-gradient(135deg, #2b2d42 0%, #4a4e69 100%);">
+        <footer class="text-white text-center py-4 mt-5" style="background: var(--footer-bg);">
             <div class="container">
-                <p class="mb-0" style="font-size: 1.05rem;">🃏 &copy; {{ 'now'|date('Y') }} iTarot - Gestion de parties de tarot avec passion - Tout droit réservé</p>
+                <p class="mb-0" style="font-size: 1.05rem;">🃏 &copy; {{ 'now'|date('Y') }} iTarot - Gestion de parties de tarot avec passion</p>
             </div>
         </footer>
 
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        <script>
+            // Gestion du thème dark/light
+            const html = document.documentElement;
+            const themeToggle = document.getElementById('theme-toggle');
+            const themeIcon = document.getElementById('theme-icon');
+            
+            // Charger le thème sauvegardé
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-theme', savedTheme);
+            updateIcon(savedTheme);
+            
+            if (themeToggle) {
+                themeToggle.addEventListener('click', () => {
+                    const currentTheme = html.getAttribute('data-theme');
+                    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                    html.setAttribute('data-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateIcon(newTheme);
+                });
+            }
+            
+            function updateIcon(theme) {
+                if (themeIcon) {
+                    themeIcon.className = theme === 'light' ? 'bi bi-moon-stars-fill' : 'bi bi-sun-fill';
+                }
+            }
+        </script>
         {% block javascripts %}{% endblock %}
     </body>
 </html>

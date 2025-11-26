@@ -129,12 +129,48 @@ class StatisticsService
     public function getGameListChartData(GameList $gameList): array
     {
         $stats = $this->getGameListStatistics($gameList);
+        $contractStats = $this->getContractStatistics($gameList);
+        
         return [
             'labels' => array_map(fn($s) => $s['player']->getName(), $stats),
             'scores' => array_map(fn($s) => $s['score'], $stats),
             'takers' => array_map(fn($s) => $s['takerCount'], $stats),
             'allies' => array_map(fn($s) => $s['allyCount'], $stats),
             'games' => array_map(fn($s) => $s['games'], $stats),
+            'contracts' => $contractStats,
         ];
+    }
+
+    /**
+     * Statistiques sur les contrats (types les plus joués et taux de réussite)
+     */
+    public function getContractStatistics(GameList $gameList): array
+    {
+        $contractData = [
+            'petite' => ['total' => 0, 'won' => 0, 'label' => 'Petite'],
+            'garde' => ['total' => 0, 'won' => 0, 'label' => 'Garde'],
+            'garde_sans' => ['total' => 0, 'won' => 0, 'label' => 'Garde Sans'],
+            'garde_contre' => ['total' => 0, 'won' => 0, 'label' => 'Garde Contre'],
+        ];
+
+        foreach ($gameList->getGames() as $game) {
+            $contractType = $game->getContractType();
+            if (isset($contractData[$contractType])) {
+                $contractData[$contractType]['total']++;
+                $taker = $game->getTaker();
+                if ($taker && $taker->getScore() > 0) {
+                    $contractData[$contractType]['won']++;
+                }
+            }
+        }
+
+        // Calculer les taux de réussite
+        foreach ($contractData as $key => &$data) {
+            $data['successRate'] = $data['total'] > 0 
+                ? round(($data['won'] / $data['total']) * 100, 1) 
+                : 0;
+        }
+
+        return $contractData;
     }
 }

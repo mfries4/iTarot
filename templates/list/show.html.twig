@@ -13,33 +13,18 @@
 </div>
 
 <div class="row mb-4">
-  <div class="col-md-6">
-    <div class="card">
-      <div class="card-header bg-dark text-white">Joueurs</div>
-      <div class="card-body">
-        <ul class="list-group list-group-flush">
-          {% for item in cumulative %}
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-              {{ item.player.name }}
-              <span class="badge bg-primary">{{ item.score >= 0 ? '+' ~ item.score : item.score }}</span>
-            </li>
-          {% endfor %}
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="col-md-6">
+  <div class="col-md-12">
     <div class="card">
       <div class="card-header bg-secondary text-white">Cumul des scores</div>
       <div class="card-body">
         <table class="table table-sm">
-          <thead><tr><th>Joueur</th><th class="text-end">Score cumulé</th><th class="text-end">Prises</th></tr></thead>
+          <thead><tr><th>Joueur</th><th class="text-end">Score cumulé</th><th class="text-end">Prises</th><th class="text-end">Alliés</th><th class="text-end">Parties</th></tr></thead>
           <tbody>
           {% for item in cumulative %}
             <tr>
-              <td>{{ item.player.name }}</td>
+              <td><strong>{{ item.player.name }}</strong></td>
               <td class="text-end">
-                {% if item.score > 0 %}<span class="text-success">+{{ item.score }}</span>{% elseif item.score < 0 %}<span class="text-danger">{{ item.score }}</span>{% else %}0{% endif %}
+                {% if item.score > 0 %}<span class="text-success fw-bold">+{{ item.score }}</span>{% elseif item.score < 0 %}<span class="text-danger fw-bold">{{ item.score }}</span>{% else %}0{% endif %}
               </td>
               <td class="text-end">{{ item.takerCount }}</td>
               <td class="text-end">{{ item.allyCount }}</td>
@@ -56,14 +41,14 @@
 <div class="row mb-4">
   <div class="col-md-6 mb-3">
     <div class="card h-100">
-      <div class="card-header bg-primary text-white">Scores cumulés</div>
-      <div class="card-body"><canvas id="listScoresChart"></canvas></div>
+      <div class="card-header bg-warning text-dark"><i class="bi bi-trophy-fill"></i> Contrats les plus joués</div>
+      <div class="card-body"><canvas id="contractsChart"></canvas></div>
     </div>
   </div>
   <div class="col-md-6 mb-3">
     <div class="card h-100">
-      <div class="card-header bg-info text-white">Prises vs Alliés</div>
-      <div class="card-body"><canvas id="listRolesChart"></canvas></div>
+      <div class="card-header bg-success text-white"><i class="bi bi-percent"></i> Taux de réussite par contrat</div>
+      <div class="card-body"><canvas id="successRateChart"></canvas></div>
     </div>
   </div>
 </div>
@@ -106,45 +91,101 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
   const listChartData = {{ chartData|json_encode|raw }};
-  const scoresCtx = document.getElementById('listScoresChart');
-  if (scoresCtx) {
-    new Chart(scoresCtx, {
+  const contracts = listChartData.contracts;
+  
+  // Graphique des contrats les plus joués
+  const contractsCtx = document.getElementById('contractsChart');
+  if (contractsCtx) {
+    const contractLabels = Object.values(contracts).map(c => c.label);
+    const contractTotals = Object.values(contracts).map(c => c.total);
+    
+    new Chart(contractsCtx, {
       type: 'bar',
       data: {
-        labels: listChartData.labels,
+        labels: contractLabels,
         datasets: [{
-          label: 'Score cumulé',
-            data: listChartData.scores,
-            backgroundColor: 'rgba(54,162,235,0.5)',
-            borderColor: 'rgba(54,162,235,1)',
-            borderWidth: 1
+          label: 'Nombre de parties',
+          data: contractTotals,
+          backgroundColor: [
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(153, 102, 255, 0.6)'
+          ],
+          borderColor: [
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(75, 192, 192, 1)',
+            'rgba(153, 102, 255, 1)'
+          ],
+          borderWidth: 2
         }]
       },
-      options: {responsive:true,scales:{y:{beginAtZero:true}}}
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1 }
+          }
+        },
+        plugins: {
+          legend: { display: false }
+        }
+      }
     });
   }
-  const rolesCtx = document.getElementById('listRolesChart');
-  if (rolesCtx) {
-    new Chart(rolesCtx, {
-      type: 'radar',
+  
+  // Graphique du taux de réussite
+  const successRateCtx = document.getElementById('successRateChart');
+  if (successRateCtx) {
+    const contractLabels = Object.values(contracts).map(c => c.label);
+    const successRates = Object.values(contracts).map(c => c.successRate);
+    
+    new Chart(successRateCtx, {
+      type: 'doughnut',
       data: {
-        labels: listChartData.labels,
-        datasets: [
-          {
-            label: 'Prises',
-            data: listChartData.takers,
-            backgroundColor: 'rgba(255,99,132,0.3)',
-            borderColor: 'rgba(255,99,132,1)'
-          },
-          {
-            label: 'Alliés',
-            data: listChartData.allies,
-            backgroundColor: 'rgba(75,192,192,0.3)',
-            borderColor: 'rgba(75,192,192,1)'
-          }
-        ]
+        labels: contractLabels,
+        datasets: [{
+          label: 'Taux de réussite (%)',
+          data: successRates,
+          backgroundColor: [
+            'rgba(75, 192, 192, 0.6)',
+            'rgba(54, 162, 235, 0.6)',
+            'rgba(255, 206, 86, 0.6)',
+            'rgba(153, 102, 255, 0.6)'
+          ],
+          borderColor: [
+            'rgba(75, 192, 192, 1)',
+            'rgba(54, 162, 235, 1)',
+            'rgba(255, 206, 86, 1)',
+            'rgba(153, 102, 255, 1)'
+          ],
+          borderWidth: 2
+        }]
       },
-      options: {responsive:true, elements:{line:{borderWidth:2}}}
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed || 0;
+                const contractKey = Object.keys(contracts)[context.dataIndex];
+                const total = contracts[contractKey].total;
+                const won = contracts[contractKey].won;
+                return label + ': ' + value + '% (' + won + '/' + total + ')';
+              }
+            }
+          }
+        }
+      }
     });
   }
 </script>

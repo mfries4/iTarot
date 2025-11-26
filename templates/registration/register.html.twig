@@ -1,0 +1,48 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Créer un compte - iTarot{% endblock %}
+
+{% block body %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card shadow-lg">
+            <div class="card-header text-center" style="background: linear-gradient(135deg, #e63946, #f77f00); color: white;">
+                <h3 class="mb-0"><i class="bi bi-person-plus-fill"></i> Créer un compte</h3>
+            </div>
+            <div class="card-body p-4">
+                {{ form_start(registrationForm) }}
+                    <div class="mb-3">
+                        {{ form_row(registrationForm.username, {
+                            'attr': {'class': 'form-control form-control-lg', 'placeholder': 'Choisissez un nom d\'utilisateur'}
+                        }) }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form_row(registrationForm.password.first, {
+                            'attr': {'class': 'form-control form-control-lg', 'placeholder': 'Choisissez un mot de passe'}
+                        }) }}
+                    </div>
+                    <div class="mb-4">
+                        {{ form_row(registrationForm.password.second, {
+                            'attr': {'class': 'form-control form-control-lg', 'placeholder': 'Confirmez votre mot de passe'}
+                        }) }}
+                    </div>
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-check-circle"></i> Créer mon compte
+                        </button>
+                    </div>
+                {{ form_end(registrationForm) }}
+                
+                <hr class="my-4">
+                
+                <div class="text-center">
+                    <p class="mb-2">Vous avez déjà un compte ?</p>
+                    <a href="{{ path('app_login') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-arrow-in-right"></i> Se connecter
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
