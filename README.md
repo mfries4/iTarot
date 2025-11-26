@@ -21,12 +21,3 @@ Application Symfony pour gérer facilement ses parties de tarot par listes. Chaq
    ```bash
    symfony serve
    ```
-
-## Tests
-Lancer la suite de tests pour vérifier l'intégrité du projet :
-```bash
-php bin/phpunit
-```
-
-## Contribution
-Les contributions sont bienvenues. Merci d'ouvrir une issue ou une merge request pour proposer des améliorations (nouveaux types de listes, statistiques supplémentaires, etc.).
