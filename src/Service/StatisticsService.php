@@ -130,6 +130,7 @@ class StatisticsService
     {
         $stats = $this->getGameListStatistics($gameList);
         $contractStats = $this->getContractStatistics($gameList);
+        $perPlayer = $this->getPerPlayerStatistics($gameList);
         
         return [
             'labels' => array_map(fn($s) => $s['player']->getName(), $stats),
@@ -138,6 +139,7 @@ class StatisticsService
             'allies' => array_map(fn($s) => $s['allyCount'], $stats),
             'games' => array_map(fn($s) => $s['games'], $stats),
             'contracts' => $contractStats,
+            'perPlayer' => $perPlayer,
         ];
     }
 
@@ -172,5 +174,83 @@ class StatisticsService
         }
 
         return $contractData;
+    }
+
+    /**
+     * Statistiques détaillées par joueur dans une liste
+     */
+    public function getPerPlayerStatistics(GameList $gameList): array
+    {
+        $result = [];
+        foreach ($gameList->getPlayers() as $player) {
+            $result[$player->getId()] = [
+                'player' => $player,
+                'name' => $player->getName(),
+                'totalGames' => 0,
+                'wins' => 0,
+                'losses' => 0,
+                'totalScore' => 0,
+                'avgScore' => 0,
+                'timesTaker' => 0,
+                'timesAlly' => 0,
+                'bestContract' => null,
+            ];
+        }
+
+        foreach ($gameList->getGames() as $game) {
+            // Identifie victoire/défaite du preneur
+            $taker = $game->getTaker();
+            $takerWon = $taker ? ($taker->getScore() > 0) : false;
+            $contractType = $game->getContractType();
+
+            foreach ($game->getGamePlayers() as $gp) {
+                $pid = $gp->getPlayer()->getId();
+                if (!isset($result[$pid])) { continue; }
+                $row = &$result[$pid];
+
+                $row['totalGames'] += 1;
+                $row['totalScore'] += $gp->getScore();
+                if ($gp->isTaker()) {
+                    $row['timesTaker'] += 1;
+                    if ($takerWon) { $row['wins'] += 1; } else { $row['losses'] += 1; }
+                    // meilleur contrat côté preneur: garder celui avec meilleur score perso
+                    if ($row['bestContract'] === null || $gp->getScore() > ($row['bestContract']['score'] ?? -INF)) {
+                        $row['bestContract'] = ['type' => $contractType, 'score' => $gp->getScore()];
+                    }
+                } elseif ($gp->isAlly()) {
+                    $row['timesAlly'] += 1;
+                    if ($takerWon) { $row['wins'] += 1; } else { $row['losses'] += 1; }
+                    if ($row['bestContract'] === null || $gp->getScore() > ($row['bestContract']['score'] ?? -INF)) {
+                        $row['bestContract'] = ['type' => $contractType, 'score' => $gp->getScore()];
+                    }
+                } else {
+                    // défenseurs: victoire quand le preneur perd
+                    if (!$takerWon) { $row['wins'] += 1; } else { $row['losses'] += 1; }
+                }
+                // calcul avg plus tard
+                unset($row);
+            }
+        }
+
+        foreach ($result as &$row) {
+            $row['avgScore'] = $row['totalGames'] > 0 ? round($row['totalScore'] / $row['totalGames'], 1) : 0;
+            if (is_array($row['bestContract'])) {
+                $row['bestContractLabel'] = match($row['bestContract']['type'] ?? null) {
+                    'petite' => 'Petite',
+                    'garde' => 'Garde',
+                    'garde_sans' => 'Garde Sans',
+                    'garde_contre' => 'Garde Contre',
+                    default => null,
+                };
+            } else {
+                $row['bestContractLabel'] = null;
+            }
+            $row['winRate'] = $row['totalGames'] > 0 ? round(($row['wins'] / $row['totalGames']) * 100, 1) : 0;
+        }
+        unset($row);
+
+        // trier par score total desc
+        usort($result, fn($a,$b) => $b['totalScore'] <=> $a['totalScore']);
+        return $result;
     }
 }

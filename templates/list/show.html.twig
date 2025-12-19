@@ -18,13 +18,18 @@
       <div class="card-header bg-secondary text-white">Cumul des scores</div>
       <div class="card-body">
         <table class="table table-sm">
-          <thead><tr><th>Joueur</th><th class="text-end">Score cumulé</th><th class="text-end">Prises</th><th class="text-end">Alliés</th><th class="text-end">Parties</th></tr></thead>
+          <thead><tr><th>Joueur</th><th class="text-end">Score cumulé</th><th style="width:220px">Visualisation</th><th class="text-end">Prises</th><th class="text-end">Alliés</th><th class="text-end">Parties</th></tr></thead>
           <tbody>
           {% for item in cumulative %}
             <tr>
               <td><strong>{{ item.player.name }}</strong></td>
               <td class="text-end">
                 {% if item.score > 0 %}<span class="text-success fw-bold">+{{ item.score }}</span>{% elseif item.score < 0 %}<span class="text-danger fw-bold">{{ item.score }}</span>{% else %}0{% endif %}
+              </td>
+              <td>
+                <div class="scorebar-container" title="{{ item.player.name }}: {{ item.score }}">
+                  <div class="scorebar-fill {% if item.score >= 0 %}pos{% else %}neg{% endif %}" data-score="{{ item.score }}"></div>
+                </div>
               </td>
               <td class="text-end">{{ item.takerCount }}</td>
               <td class="text-end">{{ item.allyCount }}</td>
@@ -42,16 +47,66 @@
   <div class="col-md-6 mb-3">
     <div class="card h-100">
       <div class="card-header bg-warning text-dark"><i class="bi bi-trophy-fill"></i> Contrats les plus joués</div>
-      <div class="card-body"><canvas id="contractsChart"></canvas></div>
+      <div class="card-body" style="height:240px"><canvas id="contractsChart"></canvas></div>
     </div>
   </div>
   <div class="col-md-6 mb-3">
     <div class="card h-100">
       <div class="card-header bg-success text-white"><i class="bi bi-percent"></i> Taux de réussite par contrat</div>
-      <div class="card-body"><canvas id="successRateChart"></canvas></div>
+      <div class="card-body" style="height:240px"><canvas id="successRateChart"></canvas></div>
     </div>
   </div>
 </div>
+
+<div class="row mb-4">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header bg-primary text-white"><i class="bi bi-people"></i> Statistiques par joueur</div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-sm align-middle">
+            <thead>
+              <tr>
+                <th>Joueur</th>
+                <th class="text-end">Parties</th>
+                <th class="text-end">Victoires</th>
+                <th class="text-end">Défaites</th>
+                <th class="text-end">Prises</th>
+                <th class="text-end">Alliés</th>
+                <th class="text-end">Score total</th>
+                <th class="text-end">Moyenne</th>
+                <th class="text-end">Taux de victoire</th>
+                <th>Meilleur contrat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in chartData.perPlayer %}
+              <tr>
+                <td><strong>{{ p.name }}</strong></td>
+                <td class="text-end">{{ p.totalGames }}</td>
+                <td class="text-end">{{ p.wins }}</td>
+                <td class="text-end">{{ p.losses }}</td>
+                <td class="text-end">{{ p.timesTaker }}</td>
+                <td class="text-end">{{ p.timesAlly }}</td>
+                <td class="text-end">{% if p.totalScore > 0 %}<span class="text-success">+{{ p.totalScore }}</span>{% elseif p.totalScore < 0 %}<span class="text-danger">{{ p.totalScore }}</span>{% else %}0{% endif %}</td>
+                <td class="text-end">{{ p.avgScore }}</td>
+                <td class="text-end">{{ p.winRate }}%</td>
+                <td>
+                  {% if p.bestContractLabel %}
+                    <span class="badge text-bg-info">{{ p.bestContractLabel }}</span>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
 
 <h2 class="h4 mb-3">Historique des parties</h2>
 {% if list.games|length > 0 %}
@@ -92,6 +147,18 @@
 <script>
   const listChartData = {{ chartData|json_encode|raw }};
   const contracts = listChartData.contracts;
+  // Barres de score (visualisation relative)
+  (function(){
+    const scores = listChartData.scores || [];
+    if (scores.length === 0) return;
+    const maxAbs = Math.max(...scores.map(s => Math.abs(s)));
+    const bars = document.querySelectorAll('.scorebar-fill');
+    bars.forEach(bar => {
+      const score = parseFloat(bar.getAttribute('data-score')) || 0;
+      const pct = maxAbs > 0 ? Math.round((Math.abs(score) / maxAbs) * 100) : 0;
+      bar.style.width = pct + '%';
+    });
+  })();
   
   // Graphique des contrats les plus joués
   const contractsCtx = document.getElementById('contractsChart');
@@ -123,7 +190,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         scales: {
           y: {
             beginAtZero: true,
@@ -167,7 +234,7 @@
       },
       options: {
         responsive: true,
-        maintainAspectRatio: true,
+        maintainAspectRatio: false,
         plugins: {
           legend: {
             position: 'bottom'
@@ -189,4 +256,10 @@
     });
   }
 </script>
+<style>
+  .scorebar-container{position:relative;height:12px;background:var(--surface-2);border-radius:6px;overflow:hidden}
+  .scorebar-fill{height:100%;width:0;transition:width .4s ease}
+  .scorebar-fill.pos{background:linear-gradient(90deg, #4caf50, #81c784)}
+  .scorebar-fill.neg{background:linear-gradient(90deg, #f44336, #e57373)}
+</style>
 {% endblock %}
