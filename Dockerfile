@@ -1,53 +1,44 @@
-# syntax=docker/dockerfile:1.7
+FROM php:8.4-apache
 
-ARG PHP_VERSION=8.2
-ARG APP_ENV=prod
-ARG APP_SECRET=ChangeMeInProd
-
-FROM composer:2 AS vendor
-
-ENV APP_ENV=${APP_ENV} \
-    APP_SECRET=${APP_SECRET}
-
-WORKDIR /app
-
-COPY . .
-
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --prefer-dist \
-    --optimize-autoloader
-
-FROM php:${PHP_VERSION}-apache AS app
-
-ENV APP_ENV=${APP_ENV} \
-    APP_SECRET=${APP_SECRET} \
-    APP_DEBUG=0 \
-    APACHE_DOCUMENT_ROOT=/var/www/app/public
+WORKDIR /var/www/html
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
         unzip \
+        zip \
         libicu-dev \
-        libpq-dev \
         libzip-dev \
+        default-mysql-client \
     && docker-php-ext-configure intl \
-    && docker-php-ext-install intl opcache pdo pdo_pgsql \
+    && docker-php-ext-install -j$(nproc) \
+        intl \
+        pdo_mysql \
+        zip \
+        opcache \
     && a2enmod rewrite \
-    && sed -ri "s#/var/www/html#${APACHE_DOCUMENT_ROOT}#g" \
-        /etc/apache2/sites-available/000-default.conf \
-        /etc/apache2/sites-available/default-ssl.conf \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /var/www/app
+# Apache vhost for Symfony public/
+COPY docker/apache-vhost.conf /etc/apache2/sites-available/000-default.conf
 
-COPY --from=vendor /app /var/www/app
+RUN echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
+    && a2enconf servername
 
-RUN mkdir -p var/cache var/log \
-    && chown -R www-data:www-data var
+# Install Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Copy project (for image to be runnable without bind-mount)
+COPY . /var/www/html
+
+# Ensure runtime dirs exist
+RUN mkdir -p var/cache var/log migrations \
+    && chown -R www-data:www-data var migrations
+
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
 
 EXPOSE 80
 
+ENTRYPOINT ["entrypoint"]
 CMD ["apache2-foreground"]

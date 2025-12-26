@@ -1,4 +1,7 @@
 .git
+.vscode
+.idea
+
 var
 vendor
 node_modules
